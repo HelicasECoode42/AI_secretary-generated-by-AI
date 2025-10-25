@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI秘书 - 智能日程管理助手</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 主容器：三栏布局 -->
+    <div class="container">
+        
+        <!-- ==================== 左侧导航栏 ==================== -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>🤖 AI秘书</h1>
+                <p class="subtitle">智能日程助手</p>
+            </div>
+            
+            <!-- 功能模块切换 -->
+            <nav class="nav-modules">
+                <h3>功能模块</h3>
+                <ul>
+                    <li class="nav-item active" data-module="todo" onclick="switchModule('todo')">
+                        <span class="icon">📋</span>
+                        <span>Todo List</span>
+                    </li>
+                    <li class="nav-item" data-module="review" onclick="switchModule('review')">
+                        <span class="icon">📊</span>
+                        <span>日程复盘</span>
+                    </li>
+                    <li class="nav-item" data-module="growth" onclick="switchModule('growth')">
+                        <span class="icon">📈</span>
+                        <span>能力增长</span>
+                    </li>
+                    <li class="nav-item" data-module="journal" onclick="switchModule('journal')">
+                        <span class="icon">📔</span>
+                        <span>学习日志</span>
+                    </li>
+                </ul>
+            </nav>
+            
+            <hr class="divider">
+            
+            <!-- 固定日程设置 -->
+            <section class="fixed-schedule-section">
+                <h3>固定日程设置</h3>
+                
+                <!-- 导入方式按钮 -->
+                <div class="input-methods">
+                    <button class="btn-secondary btn-small" onclick="showManualInput()">
+                        ✍️ 手动输入
+                    </button>
+                    <button class="btn-secondary btn-small" onclick="showOCRUpload()">
+                        📷 上传课表
+                    </button>
+                    <button class="btn-secondary btn-small" onclick="showWebImport()" disabled title="Phase 2实现">
+                        🔗 网页导入
+                    </button>
+                </div>
+                
+                <!-- 固定日程列表 -->
+                <div class="fixed-schedule-list" id="fixedScheduleList">
+                    <p class="empty-hint">暂无固定日程</p>
+                </div>
+            </section>
+        </aside>
+        
+        <!-- ==================== 中间主区域 ==================== -->
+        <main class="main-content">
+            <!-- Todo List 视图 -->
+            <div id="todoView" class="view-container">
+                <!-- 视图切换器 -->
+                <div class="view-switcher">
+                    <h2>今日日程安排</h2>
+                    <div class="view-tabs">
+                        <button class="tab-btn active" data-view="day" onclick="switchView('day')">日</button>
+                        <button class="tab-btn" data-view="week" onclick="switchView('week')">周</button>
+                        <button class="tab-btn" data-view="month" onclick="switchView('month')">月</button>
+                    </div>
+                    <div class="date-picker">
+                        <button onclick="changeDate(-1)">◀</button>
+                        <input type="date" id="currentDate" onchange="onDateChange()">
+                        <button onclick="changeDate(1)">▶</button>
+                    </div>
+                </div>
+                
+                <!-- 24小时时间轴 -->
+                <div class="timeline-container" id="timelineContainer">
+                    <div class="timeline-wrapper">
+                        <!-- 时间刻度 -->
+                        <div class="timeline-hours" id="timelineHours">
+                            <!-- 由JS动态生成 -->
+                        </div>
+                        <!-- 日程块容器 -->
+                        <div class="timeline-events" id="timelineEvents">
+                            <!-- 由JS动态生成 -->
+                        </div>
+                        <!-- 当前时间线 -->
+                        <div class="current-time-line" id="currentTimeLine"></div>
+                    </div>
+                </div>
+                
+                <!-- 排期控制按钮 -->
+                <div class="schedule-controls">
+                    <button class="btn-primary" onclick="autoSchedule()">
+                        🤖 自动排期
+                    </button>
+                    <button class="btn-primary" onclick="aiOptimizeSchedule()">
+                        ✨ AI优化
+                    </button>
+                    <button class="btn-secondary" onclick="clearSchedule()">
+                        🔄 清除排期
+                    </button>
+                </div>
+                
+                <!-- 快速任务输入 -->
+                <div class="quick-task-input">
+                    <h3>快速添加任务</h3>
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="taskInput" 
+                            placeholder="例: 写报告 2h [工作] 高优先级"
+                            onkeypress="if(event.key==='Enter') addTask()"
+                        >
+                        <button class="btn-primary" onclick="addTask()">添加</button>
+                    </div>
+                    <p class="hint">💡 支持自然语言输入，AI会自动解析分类、优先级和时长</p>
+                </div>
+                
+                <!-- 总任务一览 -->
+                <div class="task-overview">
+                    <div class="overview-header">
+                        <h3>总任务一览</h3>
+                        <div class="task-filters">
+                            <select id="categoryFilter" onchange="filterTasks()">
+                                <option value="all">全部分类</option>
+                                <option value="工作">工作</option>
+                                <option value="学习">学习</option>
+                                <option value="生活">生活</option>
+                                <option value="其他">其他</option>
+                            </select>
+                            <select id="priorityFilter" onchange="filterTasks()">
+                                <option value="all">全部优先级</option>
+                                <option value="high">高</option>
+                                <option value="medium">中</option>
+                                <option value="low">低</option>
+                            </select>
+                            <select id="statusFilter" onchange="filterTasks()">
+                                <option value="pending">待办</option>
+                                <option value="completed">已完成</option>
+                                <option value="all">全部状态</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="task-list" id="taskList">
+                        <!-- 由JS动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 其他视图占位 -->
+            <div id="reviewView" class="view-container" style="display:none;">
+                <h2>📊 日程复盘</h2>
+                <p class="placeholder">Phase 4 功能开发中...</p>
+            </div>
+            
+            <div id="growthView" class="view-container" style="display:none;">
+                <h2>📈 能力增长</h2>
+                <p class="placeholder">Phase 4 功能开发中...</p>
+            </div>
+            
+            <div id="journalView" class="view-container" style="display:none;">
+                <h2>📔 学习日志</h2>
+                <p class="placeholder">Phase 4 功能开发中...</p>
+            </div>
+        </main>
+        
+        <!-- ==================== 右侧AI对话区 ==================== -->
+        <aside class="chat-sidebar">
+            <div class="chat-header">
+                <h2>💬 AI秘书助手</h2>
+                <button class="btn-icon" onclick="clearChatHistory()" title="清除对话">🗑️</button>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-message ai-message">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <p>你好！我是你的AI秘书助手，有什么可以帮你的吗？</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <textarea 
+                    id="chatInput" 
+                    placeholder="向AI秘书提问..."
+                    rows="2"
+                    onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendChat(); }"
+                ></textarea>
+                <button class="btn-primary" onclick="sendChat()">发送</button>
+            </div>
+        </aside>
+        
+    </div>
+    
+    <!-- ==================== 弹窗模态框 ==================== -->
+    
+    <!-- 手动输入固定日程弹窗 -->
+    <div id="manualInputModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>手动添加固定日程</h3>
+                <button class="close-btn" onclick="closeModal('manualInputModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>课程名称</label>
+                    <input type="text" id="manualTitle" placeholder="例: 英语课">
+                </div>
+                <div class="form-group">
+                    <label>星期</label>
+                    <select id="manualDayOfWeek">
+                        <option value="0">周日</option>
+                        <option value="1">周一</option>
+                        <option value="2">周二</option>
+                        <option value="3">周三</option>
+                        <option value="4">周四</option>
+                        <option value="5">周五</option>
+                        <option value="6">周六</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>开始时间</label>
+                        <input type="time" id="manualStartTime" value="09:00">
+                    </div>
+                    <div class="form-group">
+                        <label>结束时间</label>
+                        <input type="time" id="manualEndTime" value="10:30">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>地点（可选）</label>
+                    <input type="text" id="manualLocation" placeholder="例: 教学楼A101">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('manualInputModal')">取消</button>
+                <button class="btn-primary" onclick="submitManualSchedule()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- OCR上传弹窗 -->
+    <div id="ocrUploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>上传课表图片识别</h3>
+                <button class="close-btn" onclick="closeModal('ocrUploadModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="ocrFileInput" accept="image/*" onchange="handleFileSelect()" style="display:none;">
+                    <div class="upload-placeholder" onclick="document.getElementById('ocrFileInput').click()">
+                        <p>📷 点击上传或拖拽课表图片</p>
+                        <p class="hint">支持 JPG、PNG 格式</p>
+                    </div>
+                </div>
+                <div id="ocrPreview" style="display:none;">
+                    <img id="previewImage" style="max-width:100%; margin-top:10px;">
+                    <div id="ocrResult" style="margin-top:10px;">
+                        <h4>识别结果</h4>
+                        <div id="ocrScheduleList"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('ocrUploadModal')">取消</button>
+                <button class="btn-primary" id="confirmOCRBtn" onclick="confirmOCRSchedules()" style="display:none;">确认添加</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑任务弹窗 -->
+    <div id="editTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑任务</h3>
+                <button class="close-btn" onclick="closeModal('editTaskModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editTaskId">
+                <div class="form-group">
+                    <label>任务内容</label>
+                    <input type="text" id="editTaskContent">
+                </div>
+                <div class="form-group">
+                    <label>分类</label>
+                    <select id="editTaskCategory">
+                        <option value="工作">工作</option>
+                        <option value="学习">学习</option>
+                        <option value="生活">生活</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>优先级</label>
+                    <select id="editTaskPriority">
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>预计时长（分钟）</label>
+                    <input type="number" id="editTaskDuration" min="15" step="15">
+                </div>
+                <div class="form-group">
+                    <label>截止日期（可选）</label>
+                    <input type="datetime-local" id="editTaskDeadline">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('editTaskModal')">取消</button>
+                <button class="btn-primary" onclick="submitEditTask()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 拖拽后询问弹窗 -->
+    <div id="dragConfirmModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>检测到时间调整</h3>
+            </div>
+            <div class="modal-body">
+                <p>您手动调整了任务时间，是否需要AI重新排期其他任务？</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="handleDragResponse('keep')">仅保存修改</button>
+                <button class="btn-primary" onclick="handleDragResponse('reschedule')">AI重新排期</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 加载提示 -->
+    <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+        <div class="spinner"></div>
+        <p>处理中...</p>
+    </div>
+    
+    <!-- Toast提示 -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- 引入JavaScript -->
+    <script src="/static/script.js"></script>
+</body>
+</html>
